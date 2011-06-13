@@ -48,7 +48,7 @@ import java.util.Properties;
  */
 @SuppressWarnings({"NullableProblems", "UnusedDeclaration"})
 public class PostmarkClient {
-	private static final Logger logger = LoggerFactory.getLogger(PostmarkClient.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PostmarkClient.class);
 
 	private static final String TEST_SERVER_TOKEN = "POSTMARK_API_TEST";
 
@@ -69,14 +69,13 @@ public class PostmarkClient {
 	private static final String version;
 
 	static {
-		final String DEFAULT_VERSION = "X";
-		String v = DEFAULT_VERSION;
+		String v;
 		try {
 			Properties properties = new Properties();
 			properties.load(PostmarkClient.class.getResourceAsStream("version.properties"));
-			v = properties.getProperty("version", DEFAULT_VERSION);
+			v = properties.getProperty("version", "X");
 		} catch(IOException ignored) {
-			v = DEFAULT_VERSION;
+			v = "X";
 		}
 		version = v;
 	}
@@ -114,8 +113,8 @@ public class PostmarkClient {
 		this.defaultFrom = defaultFrom;
 		this.https = https;
 
-		if(logger.isInfoEnabled()) {
-			logger.info("Created PostmarkClient [{}], Server Token: {}", (this.https ? "https" : "http"),
+		if(LOGGER.isInfoEnabled()) {
+			LOGGER.info("Created PostmarkClient [{}], Server Token: {}", (this.https ? "https" : "http"),
 					TEST_SERVER_TOKEN.equals(this.serverToken) ? TEST_SERVER_TOKEN : this.serverToken.replaceAll("[a-zA-Z0-9]", "X")
 			);
 		}
@@ -173,19 +172,19 @@ public class PostmarkClient {
 
 		boolean batch = (messages.length > 1);
 
-		if(logger.isTraceEnabled() || logger.isDebugEnabled()) {
+		if(LOGGER.isTraceEnabled() || LOGGER.isDebugEnabled()) {
 			StringBuilder sb = new StringBuilder();
 			for(PostmarkMessage message : messages) {
 				if(sb.length() != 0) {
 					sb.append(", ");
 				}
-				if(logger.isTraceEnabled()) {
+				if(LOGGER.isTraceEnabled()) {
 					sb.append(message.toStringVerbose());
 				} else {
 					sb.append(message.toString());
 				}
 			}
-			logger.debug("send: [{}]", sb.toString());
+			LOGGER.debug("send: [{}]", sb.toString());
 		}
 
 		HttpClient httpClient = new DefaultHttpClient();
@@ -195,11 +194,11 @@ public class PostmarkClient {
 			method.addHeader("Accept", "application/json");
 			method.addHeader("Content-Type", "application/json; charset=UTF-8");
 			method.addHeader("X-Postmark-Server-Token", serverToken);
-			method.addHeader("User-Agent", "postmark4j");
+			method.addHeader("User-Agent", "postmark4j-" + version);
 
 			String requestJson = gson.toJson(batch ? messages : messages[0]);
 
-			logger.debug("Request: {}", requestJson);
+			LOGGER.debug("Request: {}", requestJson);
 
 			method.setEntity(new StringEntity(requestJson, "UTF-8"));
 
@@ -209,7 +208,7 @@ public class PostmarkClient {
 
 			int statusCode = httpResponse.getStatusLine().getStatusCode();
 
-			logger.debug("Status: {}, Response: {}", statusCode, responseJson);
+			LOGGER.debug("Status: {}, Response: {}", statusCode, responseJson);
 
 			if(statusCode == 200) {
 				return gson.fromJson(responseJson, PostmarkResponse.class);
