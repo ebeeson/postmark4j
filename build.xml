@@ -1,0 +1,45 @@
+<project name="postmark4j" default="build">
+	<dirname property="base.dir" file="${ant.file}"/>
+
+	<property name="src.dir" value="${base.dir}/src"/>
+	<property name="lib.dir" value="${base.dir}/lib"/>
+
+	<property file="${base.dir}/build.properties"/>
+	<property file="${src.dir}/version.properties"/>
+
+	<property name="jar.file" value="${base.dir}/${ant.project.name}-${version}.jar"/>
+
+	<target name="build">
+		<tempfile property="build.dir" prefix="${ant.project.name}-build-"/>
+		<mkdir dir="${build.dir}"/>
+		<javac srcdir="${src.dir}" destdir="${build.dir}" debug="${debug}">
+			<classpath>
+				<fileset dir="${lib.dir}" includes="**/*.jar"/>
+			</classpath>
+		</javac>
+		<copy todir="${build.dir}">
+			<fileset dir="${src.dir}" includes="**/*.properties"/>
+		</copy>
+		<!--
+		There must be a better way to do this, but I'm working from a castle in the
+		French countryside with no access to internet, so just doing what works.
+		 -->
+		<condition property="runIncludeSourcesTarget">
+			<or>
+				<equals arg1="${includeSources}" arg2="true" casesensitive="false" trim="true"/>
+				<equals arg1="${includeSources}" arg2="yes" casesensitive="false" trim="true"/>
+				<equals arg1="${includeSources}" arg2="on" casesensitive="false" trim="true"/>
+				<equals arg1="${includeSources}" arg2="t" casesensitive="false" trim="true"/>
+			</or>
+		</condition>
+		<antcall target="copy-sources"/>
+		<jar basedir="${build.dir}" jarfile="${jar.file}"/>
+		<delete dir="${build.dir}"/>
+	</target>
+
+	<target name="copy-sources" if="runIncludeSourcesTarget">
+		<copy todir="${build.dir}">
+			<fileset dir="${src.dir}" includes="**/*.java"/>
+		</copy>
+	</target>
+</project>
