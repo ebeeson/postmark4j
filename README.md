@@ -51,6 +51,7 @@ is an extremely cludgy hack).
 For making HTTP/HTTPS requests. URLConnection just doesn't cut it.
 
 HttpClient 4 also depends on:
+
 * Commons Logging (or jcl-over-slf4j, because commons-logging is for wimps)
 * Commons Codec (also required by postmark4j)
 * httpcore (included)
