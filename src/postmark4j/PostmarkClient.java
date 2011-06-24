@@ -19,9 +19,9 @@ import postmark4j.exceptions.InternalServerErrorPostmarkException;
 import postmark4j.exceptions.UnauthorizedPostmarkException;
 import postmark4j.exceptions.UnknownPostmarkException;
 import postmark4j.exceptions.UnprocessableEntityPostmarkException;
+import postmark4j.jsonio.ISODateDeserializer;
 import postmark4j.jsonio.PostmarkAddressListSerializer;
 import postmark4j.jsonio.PostmarkAddressSerializer;
-import postmark4j.jsonio.ISODateDeserializer;
 
 import java.io.IOException;
 import java.util.Date;
@@ -43,7 +43,6 @@ import java.util.Properties;
  * By default, HTTPS will be used, though this can be overriden by passing {@code false} to an appropriate
  * constructor for the {@code https} parameter.
  *
- *
  * @author Erik Beeson
  */
 @SuppressWarnings({"NullableProblems", "UnusedDeclaration"})
@@ -52,9 +51,12 @@ public class PostmarkClient {
 
 	private static final String TEST_SERVER_TOKEN = "POSTMARK_API_TEST";
 
-	private static final String URL_HTTP = "http://api.postmarkapp.com/email";
-	private static final String URL_HTTPS = "https://api.postmarkapp.com/email";
-	private static final String URL_BATCH = "/batch";
+	private static final String URL_BASE_HTTP = "http://api.postmarkapp.com";
+	private static final String URL_BASE_HTTPS = "https://api.postmarkapp.com";
+
+	private static final String URL_SEND = "/email";
+	private static final String URL_BATCH = "/email/batch";
+	private static final String URL_BOUNCE_TAGS = "/bounces/tags";
 
 	private final Gson gson = new GsonBuilder()
 			.registerTypeAdapter(PostmarkAddress.class, new PostmarkAddressSerializer())
@@ -120,10 +122,12 @@ public class PostmarkClient {
 		}
 	}
 
+	protected String getBaseURL() {
+		return https ? URL_BASE_HTTPS : URL_BASE_HTTP;
+	}
+
 	/**
-	 * Send a message  with the default server token.
-	 *
-	 * Use {@link #send(String, postmark4j.data.PostmarkMessage...)} to override the default server token.
+	 * Send a message.
 	 *
 	 * @param messages The message or messages to send.
 	 * @return The response from Postmark.
@@ -134,24 +138,6 @@ public class PostmarkClient {
 	 * @throws postmark4j.exceptions.UnprocessableEntityPostmarkException Something with the message is not quite right. See: {@link UnprocessableEntityPostmarkException}.
 	 */
 	public PostmarkResponse send(PostmarkMessage... messages) throws IOException, UnauthorizedPostmarkException, UnprocessableEntityPostmarkException, InternalServerErrorPostmarkException, UnknownPostmarkException {
-		return send(null, messages);
-	}
-
-	/**
-	 * Send a message with the given server token.
-	 *
-	 * Use {@link #send(postmark4j.data.PostmarkMessage...)} to use the default server token.
-	 *
-	 * @param serverToken The server token to authorize this request with. Will use the default if null or not provided.
-	 * @param messages The message or messages to send.
-	 * @return The response from Postmark.
-	 * @throws IOException If there's a problem communicating with the Postmark server.
-	 * @throws postmark4j.exceptions.InternalServerErrorPostmarkException Error at Postmark servers. See: {@link InternalServerErrorPostmarkException}.
-	 * @throws postmark4j.exceptions.UnauthorizedPostmarkException Missing or incorrect API Key header.
-	 * @throws postmark4j.exceptions.UnknownPostmarkException Postmark returned an HTTP Status that wasn't documented.
-	 * @throws postmark4j.exceptions.UnprocessableEntityPostmarkException Something with the message is not quite right. See: {@link UnprocessableEntityPostmarkException}.
-	 */
-	public PostmarkResponse send(String serverToken, PostmarkMessage... messages) throws IOException, UnauthorizedPostmarkException, UnprocessableEntityPostmarkException, InternalServerErrorPostmarkException, UnknownPostmarkException {
 		if(messages.length == 0) {
 			throw new IllegalArgumentException("At least one message is required.");
 		}
@@ -164,10 +150,6 @@ public class PostmarkClient {
 					messages[i] = new PostmarkMessage(defaultFrom, messages[i]);
 				}
 			}
-		}
-
-		if(serverToken == null) {
-			serverToken = this.serverToken;
 		}
 
 		boolean batch = (messages.length > 1);
@@ -189,7 +171,7 @@ public class PostmarkClient {
 
 		HttpClient httpClient = new DefaultHttpClient();
 		try {
-			HttpPost method = new HttpPost((https ? URL_HTTPS : URL_HTTP) + (batch ? URL_BATCH : ""));
+			HttpPost method = new HttpPost(getBaseURL() + (batch ? URL_BATCH : URL_SEND));
 
 			method.addHeader("Accept", "application/json");
 			method.addHeader("Content-Type", "application/json; charset=UTF-8");
