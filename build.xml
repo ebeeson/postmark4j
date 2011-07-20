@@ -8,6 +8,7 @@
 	<property file="${src.dir}/version.properties"/>
 
 	<property name="jar.file" value="${base.dir}/${ant.project.name}-${version}.jar"/>
+	<property name="zip.file" value="${base.dir}/${ant.project.name}-${version}.zip"/>
 
 	<target name="build">
 		<tempfile property="build.dir" prefix="${ant.project.name}-build-"/>
@@ -41,5 +42,11 @@
 		<copy todir="${build.dir}">
 			<fileset dir="${src.dir}" includes="**/*.java"/>
 		</copy>
+	</target>
+
+	<target name="dist" depends="build">
+		<zip file="${zip.file}">
+			<fileset dir="${base.dir}" excludes="${zip.file}"/>
+		</zip>
 	</target>
 </project>
