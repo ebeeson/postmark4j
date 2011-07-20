@@ -84,5 +84,7 @@ Because we're lazy.
 * Better docs
 * Package reorganization
 * Renamed to postmark4j
+
+
 ### Fixes
 * Hard-code message entity as UTF-8 in PostmarkClient
