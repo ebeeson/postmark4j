@@ -1,8 +1,10 @@
-<project name="postmark4j" default="build">
+<project name="postmark4j" default="dist">
+	<defaultexcludes add="**/.git/**,**/.gitignore"/>
 	<dirname property="base.dir" file="${ant.file}"/>
 
 	<property name="src.dir" value="${base.dir}/src"/>
 	<property name="lib.dir" value="${base.dir}/lib"/>
+	<property name="javadoc.dir" value="${base.dir}/javadoc"/>
 
 	<property file="${base.dir}/build.properties"/>
 	<property file="${src.dir}/version.properties"/>
@@ -10,7 +12,8 @@
 	<property name="jar.file" value="${base.dir}/${ant.project.name}-${version}.jar"/>
 	<property name="zip.file" value="${base.dir}/${ant.project.name}-${version}.zip"/>
 
-	<target name="build">
+
+	<target name="build" description="Build jar with options specified in build.properties">
 		<tempfile property="build.dir" prefix="${ant.project.name}-build-"/>
 		<mkdir dir="${build.dir}"/>
 		<javac srcdir="${src.dir}" destdir="${build.dir}" debug="${debug}">
@@ -38,13 +41,25 @@
 		<delete dir="${build.dir}"/>
 	</target>
 
-	<target name="copy-sources" if="runIncludeSourcesTarget">
+
+	<target name="copy-sources" if="runIncludeSourcesTarget" description="Optionally copy sources into built jar">
 		<copy todir="${build.dir}">
 			<fileset dir="${src.dir}" includes="**/*.java"/>
 		</copy>
 	</target>
 
-	<target name="dist" depends="build">
+
+	<target name="javadoc" description="Generate javadocs from sources">
+		<mkdir dir="${javadoc.dir}"/>
+		<javadoc destdir="${javadoc.dir}" sourcepath="${src.dir}" access="public">
+			<classpath>
+				<fileset dir="${lib.dir}" includes="**/*.jar"/>
+			</classpath>
+		</javadoc>
+	</target>
+
+
+	<target name="dist" depends="build, javadoc" description="">
 		<zip file="${zip.file}">
 			<fileset dir="${base.dir}" excludes="${zip.file}"/>
 		</zip>

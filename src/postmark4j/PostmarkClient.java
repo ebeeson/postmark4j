@@ -127,7 +127,7 @@ public class PostmarkClient {
 	}
 
 	/**
-	 * Send a message.
+	 * Send one or more messages.
 	 *
 	 * @param messages The message or messages to send.
 	 * @return The response from Postmark.
