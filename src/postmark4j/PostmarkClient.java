@@ -49,7 +49,14 @@ import java.util.Properties;
 public class PostmarkClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PostmarkClient.class);
 
-	private static final String TEST_SERVER_TOKEN = "POSTMARK_API_TEST";
+	/**
+	 * Often when implementing your client library or when integrating an existing library into your application you
+	 * would want to send "test" emails that don't actually get delivered to the recipient. You just need to know if
+	 * your data is valid. You can do that by passing the "POSTMARK_API_TEST" value as your server API token.
+	 *
+	 * @see <a href="http://developer.postmarkapp.com/developer-build.html#authentication-headers">http://developer.postmarkapp.com/developer-build.html#authentication-headers</a>
+	 */
+	public static final String TEST_SERVER_TOKEN = "POSTMARK_API_TEST";
 
 	private static final String URL_BASE_HTTP = "http://api.postmarkapp.com";
 	private static final String URL_BASE_HTTPS = "https://api.postmarkapp.com";
@@ -82,32 +89,16 @@ public class PostmarkClient {
 		version = v;
 	}
 
-	public PostmarkClient() {
-		this(null, null);
-	}
-
-	public PostmarkClient(boolean https) {
-		this(null, null, https);
-	}
-
 	public PostmarkClient(String serverToken) {
-		this(serverToken, null);
+		this(serverToken, null, true);
 	}
 
 	public PostmarkClient(String serverToken, boolean https) {
-		this(serverToken, null);
-	}
-
-	public PostmarkClient(PostmarkAddress defaultFrom) {
-		this(null, defaultFrom);
+		this(serverToken, null, https);
 	}
 
 	public PostmarkClient(String serverToken, PostmarkAddress defaultFrom) {
 		this(serverToken, defaultFrom, true);
-	}
-
-	public PostmarkClient(PostmarkAddress defaultFrom, boolean https) {
-		this(null, defaultFrom, https);
 	}
 
 	public PostmarkClient(String serverToken, PostmarkAddress defaultFrom, boolean https) {
@@ -127,9 +118,9 @@ public class PostmarkClient {
 	}
 
 	/**
-	 * Send one or more messages.
+	 * Send a message.
 	 *
-	 * @param messages The message or messages to send.
+	 * @param message The message to send.
 	 * @return The response from Postmark.
 	 * @throws IOException If there's a problem communicating with the Postmark server.
 	 * @throws postmark4j.exceptions.InternalServerErrorPostmarkException Error at Postmark servers. See: {@link InternalServerErrorPostmarkException}.
@@ -137,7 +128,26 @@ public class PostmarkClient {
 	 * @throws postmark4j.exceptions.UnknownPostmarkException Postmark returned an HTTP Status that wasn't documented.
 	 * @throws postmark4j.exceptions.UnprocessableEntityPostmarkException Something with the message is not quite right. See: {@link UnprocessableEntityPostmarkException}.
 	 */
-	public PostmarkResponse send(PostmarkMessage... messages) throws IOException, UnauthorizedPostmarkException, UnprocessableEntityPostmarkException, InternalServerErrorPostmarkException, UnknownPostmarkException {
+	public PostmarkResponse send(PostmarkMessage message) throws IOException, UnauthorizedPostmarkException, UnprocessableEntityPostmarkException, InternalServerErrorPostmarkException, UnknownPostmarkException {
+		return send(URL_SEND, new PostmarkMessage[]{message}, PostmarkResponse.class);
+	}
+
+	/**
+	 * Send messages.
+	 *
+	 * @param messages The messages to send.
+	 * @return The responses from Postmark.
+	 * @throws IOException If there's a problem communicating with the Postmark server.
+	 * @throws postmark4j.exceptions.InternalServerErrorPostmarkException Error at Postmark servers. See: {@link InternalServerErrorPostmarkException}.
+	 * @throws postmark4j.exceptions.UnauthorizedPostmarkException Missing or incorrect API Key header.
+	 * @throws postmark4j.exceptions.UnknownPostmarkException Postmark returned an HTTP Status that wasn't documented.
+	 * @throws postmark4j.exceptions.UnprocessableEntityPostmarkException Something with the message is not quite right. See: {@link UnprocessableEntityPostmarkException}.
+	 */
+	public PostmarkResponse[] send(PostmarkMessage... messages) throws IOException, UnauthorizedPostmarkException, UnprocessableEntityPostmarkException, InternalServerErrorPostmarkException, UnknownPostmarkException {
+		return send(URL_BATCH, messages, PostmarkResponse[].class);
+	}
+
+	protected String toJson(PostmarkMessage... messages) {
 		if(messages.length == 0) {
 			throw new IllegalArgumentException("At least one message is required.");
 		}
@@ -151,8 +161,6 @@ public class PostmarkClient {
 				}
 			}
 		}
-
-		boolean batch = (messages.length > 1);
 
 		if(LOGGER.isTraceEnabled() || LOGGER.isDebugEnabled()) {
 			StringBuilder sb = new StringBuilder();
@@ -169,19 +177,21 @@ public class PostmarkClient {
 			LOGGER.debug("send: [{}]", sb.toString());
 		}
 
+		return gson.toJson((messages.length > 1) ? messages : messages[0]);
+	}
+
+	protected <T> T send(String url, PostmarkMessage[] messages, Class<T> responseClass) throws IOException, UnauthorizedPostmarkException, UnprocessableEntityPostmarkException, InternalServerErrorPostmarkException, UnknownPostmarkException {
 		HttpClient httpClient = new DefaultHttpClient();
 		try {
-			HttpPost method = new HttpPost(getBaseURL() + (batch ? URL_BATCH : URL_SEND));
+			HttpPost method = new HttpPost(getBaseURL() + url);
 
 			method.addHeader("Accept", "application/json");
 			method.addHeader("Content-Type", "application/json; charset=UTF-8");
 			method.addHeader("X-Postmark-Server-Token", serverToken);
 			method.addHeader("User-Agent", "postmark4j-" + version);
 
-			String requestJson = gson.toJson(batch ? messages : messages[0]);
-
+			String requestJson = toJson(messages);
 			LOGGER.debug("Request: {}", requestJson);
-
 			method.setEntity(new StringEntity(requestJson, "UTF-8"));
 
 			HttpResponse httpResponse = httpClient.execute(method);
@@ -193,7 +203,7 @@ public class PostmarkClient {
 			LOGGER.debug("Status: {}, Response: {}", statusCode, responseJson);
 
 			if(statusCode == 200) {
-				return gson.fromJson(responseJson, PostmarkResponse.class);
+				return gson.fromJson(responseJson, responseClass);
 			} else if(statusCode == 401) {
 				throw new UnauthorizedPostmarkException();
 			} else if(statusCode == 422) {
