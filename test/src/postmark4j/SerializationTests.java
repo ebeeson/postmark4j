@@ -89,7 +89,6 @@ public class SerializationTests {
 
 	@Test
 	public void serializeMessage() {
-		System.out.println("PostmarkMessageTest.test");
 		PostmarkMessage message = new PostmarkMessage(new PostmarkAddress("sender@example.com"), "Test", new PostmarkAddress("receiver@example.com"));
 		message.setReplyTo(new PostmarkAddress("reply@example.com"));
 		message.addCc(new PostmarkAddress("copied@example.com"));

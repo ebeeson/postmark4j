@@ -12,6 +12,9 @@
 	<property name="jar.file" value="${base.dir}/${ant.project.name}-${version}.jar"/>
 	<property name="zip.file" value="${base.dir}/${ant.project.name}-${version}.zip"/>
 
+	<property name="test.dir" value="${base.dir}/test"/>
+	<property name="test.src.dir" value="${test.dir}/src"/>
+	<property name="test.lib.dir" value="${test.dir}/lib"/>
 
 	<target name="build" description="Build jar with options specified in build.properties">
 		<tempfile property="build.dir" prefix="${ant.project.name}-build-"/>
@@ -63,5 +66,32 @@
 		<zip file="${zip.file}">
 			<fileset dir="${base.dir}" excludes="${zip.file}"/>
 		</zip>
+	</target>
+
+
+	<taskdef name="testng" classname="org.testng.TestNGAntTask" classpath="${test.lib.dir}/testng-6.2.jar"/>
+
+	<target name="test" depends="build">
+		<tempfile property="test.build.dir" prefix="${ant.project.name}-test-"/>
+		<mkdir dir="${test.build.dir}"/>
+		<javac srcdir="test/src" destdir="${test.build.dir}">
+			<classpath>
+				<fileset dir="${lib.dir}" includes="**/*.jar"/>
+				<fileset dir="${test.lib.dir}" includes="**/*.jar"/>
+				<file file="${jar.file}"/>
+			</classpath>
+		</javac>
+
+		<testng>
+			<classpath>
+				<fileset dir="${lib.dir}" includes="**/*.jar"/>
+				<fileset dir="${test.lib.dir}" includes="**/*.jar"/>
+				<pathelement location="${test.build.dir}"/>
+				<file file="${jar.file}"/>
+			</classpath>
+			<classfileset dir="${test.build.dir}" includes="**/*.class"/>
+		</testng>
+
+		<delete dir="${test.build.dir}"/>
 	</target>
 </project>
