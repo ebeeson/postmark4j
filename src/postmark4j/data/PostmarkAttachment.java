@@ -2,6 +2,7 @@ package postmark4j.data;
 
 import com.google.gson.annotations.SerializedName;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,8 @@ public class PostmarkAttachment {
 
 	public PostmarkAttachment(File file, String contentType, String name) throws IOException {
 		this.name = name;
-		this.content = Base64.encodeBase64String(IOUtils.toByteArray(new FileInputStream(file)));
+		// not using Base64.encodeBase64String(...) because it chunks
+		this.content = StringUtils.newStringUtf8(Base64.encodeBase64(IOUtils.toByteArray(new FileInputStream(file))));
 		this.contentType = contentType;
 
 		if(!isAcceptableExtension(file)) {

@@ -73,9 +73,19 @@ Because we're lazy.
 
 
 # Changes
+## 1.2
+### Improvements
+* Unit tests for serialization/deserialization
+* Refactoring to allow subclasses of `PostmarkClient` to provide a custom `HttpClient` implementation.
+
+### Fixes
+* Remove incorrect CRLF chunking from attachment data.
+
+
 ## 1.1
 ### New Features
-* Attachments (pretty basic, doesn't verify attachement type or size yet).
+* Attachments (pretty basic, doesn't verify type or size yet).
+
 
 ## 1.0
 ### New Features

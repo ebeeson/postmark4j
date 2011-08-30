@@ -183,42 +183,46 @@ public class PostmarkClient {
 	protected <T> T send(String url, PostmarkMessage[] messages, Class<T> responseClass) throws IOException, UnauthorizedPostmarkException, UnprocessableEntityPostmarkException, InternalServerErrorPostmarkException, UnknownPostmarkException {
 		HttpClient httpClient = new DefaultHttpClient();
 		try {
-			HttpPost method = new HttpPost(getBaseURL() + url);
-
-			method.addHeader("Accept", "application/json");
-			method.addHeader("Content-Type", "application/json; charset=UTF-8");
-			method.addHeader("X-Postmark-Server-Token", serverToken);
-			method.addHeader("User-Agent", "postmark4j-" + version);
-
-			String requestJson = toJson(messages);
-			LOGGER.debug("Request: {}", requestJson);
-			method.setEntity(new StringEntity(requestJson, "UTF-8"));
-
-			HttpResponse httpResponse = httpClient.execute(method);
-			HttpEntity entity = httpResponse.getEntity();
-			String responseJson = (entity == null ? null : EntityUtils.toString(entity));
-
-			int statusCode = httpResponse.getStatusLine().getStatusCode();
-
-			LOGGER.debug("Status: {}, Response: {}", statusCode, responseJson);
-
-			if(statusCode == 200) {
-				return gson.fromJson(responseJson, responseClass);
-			} else if(statusCode == 401) {
-				throw new UnauthorizedPostmarkException();
-			} else if(statusCode == 422) {
-				if(responseJson != null && responseJson.trim().length() > 0) {
-					throw new UnprocessableEntityPostmarkException(gson.fromJson(responseJson, PostmarkError.class));
-				} else {
-					throw new UnprocessableEntityPostmarkException();
-				}
-			} else if(statusCode == 500) {
-				throw new InternalServerErrorPostmarkException();
-			} else {
-				throw new UnknownPostmarkException(httpResponse.getStatusLine().getStatusCode());
-			}
+			return send(httpClient, url, messages, responseClass);
 		} finally {
 			httpClient.getConnectionManager().shutdown();
+		}
+	}
+
+	protected <T> T send(HttpClient httpClient, String url, PostmarkMessage[] messages, Class<T> responseClass) throws IOException, UnauthorizedPostmarkException, UnprocessableEntityPostmarkException, InternalServerErrorPostmarkException, UnknownPostmarkException {
+		HttpPost method = new HttpPost(getBaseURL() + url);
+
+		method.addHeader("Accept", "application/json");
+		method.addHeader("Content-Type", "application/json; charset=UTF-8");
+		method.addHeader("X-Postmark-Server-Token", serverToken);
+		method.addHeader("User-Agent", "postmark4j-" + version);
+
+		String requestJson = toJson(messages);
+		LOGGER.debug("Request: {}", requestJson);
+		method.setEntity(new StringEntity(requestJson, "UTF-8"));
+
+		HttpResponse httpResponse = httpClient.execute(method);
+		HttpEntity entity = httpResponse.getEntity();
+		String responseJson = (entity == null ? null : EntityUtils.toString(entity));
+
+		int statusCode = httpResponse.getStatusLine().getStatusCode();
+
+		LOGGER.debug("Status: {}, Response: {}", statusCode, responseJson);
+
+		if(statusCode == 200) {
+			return gson.fromJson(responseJson, responseClass);
+		} else if(statusCode == 401) {
+			throw new UnauthorizedPostmarkException();
+		} else if(statusCode == 422) {
+			if(responseJson != null && responseJson.trim().length() > 0) {
+				throw new UnprocessableEntityPostmarkException(gson.fromJson(responseJson, PostmarkError.class));
+			} else {
+				throw new UnprocessableEntityPostmarkException();
+			}
+		} else if(statusCode == 500) {
+			throw new InternalServerErrorPostmarkException();
+		} else {
+			throw new UnknownPostmarkException(httpResponse.getStatusLine().getStatusCode());
 		}
 	}
 }

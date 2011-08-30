@@ -1,5 +1,5 @@
 /**
- *  Postmark4j: A (almost) complete Java library for accessing the <a href="http://postmarkapp.com/">Postmark</a>
+ *  Postmark4j: A complete Java library for accessing the <a href="http://postmarkapp.com/">Postmark</a>
  *  transactional mail service.
  *
  *  The main entry point is {@link postmark4j.PostmarkClient} which should be configured with a Server Token,
